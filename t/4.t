@@ -17,7 +17,7 @@ BEGIN { use_ok('IO::Pager') };
 
 
 SKIP: {
-  skip("Can't run under Test::Harness  perl t.pl  after make test", 2)
+  skip("Can't run w/ Test::Harness  perl -Mblib t.pl  after make test", 2)
     if $ENV{HARNESS_ACTIVE};
   
   diag(<<EOF

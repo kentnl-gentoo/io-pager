@@ -1,4 +1,4 @@
-IO::Pager version 0.04
+IO::Pager version 0.05
 =====================
 
 IO::Pager - Select a pager, optionally pipe it output if destination is a TTY
@@ -21,7 +21,7 @@ To install this module type the following:
    perl Makefile.PL
    make
    make test
-   perl t.pl #Helas the real tests don't work well under Test::*
+   perl -Mblib t.pl #Helas the real tests don't work well under Test::*
    make install
 
 DEPENDENCIES
@@ -29,9 +29,14 @@ DEPENDENCIES
 File::Spec  this is a core module.
 File::Which is not required bu *strongly* recommended.
 
-COPYRIGHT AND LICENSE
+PORTABLE
 
-Put the correct copyright and licence information here.
+This is intended to be as portable as possible, I myself have tested
+it on Solaris 9 and Windows 98. IO::Pager::Unbuffered does not appear
+to work happily with Windows 98, it'll never return control and acts
+more like IO::Pager::Page;
+
+COPYRIGHT AND LICENSE
 
 Copyright (C) 2003 Jerrad Pierce
 

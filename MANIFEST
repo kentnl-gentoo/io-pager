@@ -3,6 +3,7 @@ Makefile.PL
 MANIFEST
 lib/IO/Pager.pm
 lib/IO/Pager/Buffered.pm
+lib/IO/Pager/Page.pm
 lib/IO/Pager/Unbuffered.pm
 README
 TODO

@@ -131,7 +131,7 @@ I<$,> is used see L<perlvar>.
 
 =head1 SEE ALSO
 
-L<IO::Pager>, L<IO::Pager::Unbuffered>
+L<IO::Pager>, L<IO::Pager::Unbuffered>, L<IO::Pager::Page>
 
 =head1 AUTHOR
 

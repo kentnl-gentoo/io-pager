@@ -5,14 +5,15 @@ use strict;
 use vars qw( $VERSION );
 use File::Spec;
 
-$VERSION = 0.04;
+$VERSION = 0.05;
 
 BEGIN {
   eval 'use File::Which';
   my $which = !$@;
   
   if( defined($ENV{PAGER}) ){
-    my $pager =~ (split(/(?<!\\)\s/, $ENV{PAGER}))[0];
+#    my $pager =~ (split(/(?<!\\)\s/, $ENV{PAGER}))[0];
+    my $pager =~ (split(' ', $ENV{PAGER}))[0];
     
     #Some platforms don't do -x so we use -e
     unless( File::Spec->file_name_is_absolute($pager) && -e $pager ){
@@ -25,13 +26,12 @@ BEGIN {
     }
   }
   else{
-    foreach(
-	    '/usr/local/bin/less',
-	    '/usr/bin/less',
-	    '/usr/bin/more',
-	    File::Which::where('less'),
-	    File::Which::where('more')
-	   ) {
+    my @loc = ( '/usr/local/bin/less',
+		'/usr/bin/less',
+		'/usr/bin/more' );
+    push(@loc, File::Which::where('less'),
+	       File::Which::where('more') ) if $which;
+    foreach( @loc ) {
       do{ $ENV{PAGER} = $_; last } if -e;
     }
     $ENV{PAGER} ||= 'more';
@@ -203,7 +203,9 @@ Steps 1, 3 and 4 rely upon $ENV{PATH}.
 
 =head1 SEE ALSO
 
-L<IO::Pager::Buffered>, L<IO::Pager::Unbuffered>, L<IO::Page>, L<Tool::Less>
+L<IO::Pager::Buffered>, L<IO::Pager::Unbuffered>, L<IO::Pager::Page>
+
+L<IO::Page>, L<Tool::Less>
 
 =head1 AUTHOR
 

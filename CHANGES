@@ -18,3 +18,13 @@ Revision history for Perl extension IO::Pager.
       Touched up documentation
 
       Added some tests
+
+0.05  Thu Jul 17 20:01:55 EDT 2003
+
+      Touched up documentation
+
+      Added IO::Pager::Page, a clone of IO::Page "Broken pipe" foible and all
+
+      Fixed a bug in $ENV{PAGER} selection algorythm,
+      it failed if you didn't have File::Which. It's now back to
+      being only strongly recommended as opposed to required.

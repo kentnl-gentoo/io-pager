@@ -5,7 +5,7 @@ use strict;
 use vars qw( $VERSION );
 use Tie::Handle;
 
-$VERSION = 0.03;
+$VERSION = 0.05;
 
 sub new(;$){
   no strict 'refs';
@@ -110,9 +110,9 @@ An alias for new.
 
 =head2 close( FILEHANDLE )
 
-Explicitly close the filehandle, this stops collecting and displays the
-output, executing a pager if necessary. Normally you'd just wait for the
-object to pass out of scope.
+Explicitly close the filehandle, if a pager was deemed necessary this
+will kill it. Normally you'd just wait for the user to exit the pager
+and the object to pass out of scope.
 
 I<This does not default to the current filehandle>.
 
@@ -134,7 +134,7 @@ You probably want to do something with SIGPIPE eg;
 
 =head1 SEE ALSO
 
-L<IO::Pager>, L<IO::Pager::Buffered>
+L<IO::Pager>, L<IO::Pager::Buffered>, L<IO::Pager::Page>
 
 =head1 AUTHOR
 
