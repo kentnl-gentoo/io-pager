@@ -127,7 +127,7 @@ I<This does not default to the current filehandle>.
 If you mix buffered and unbuffered operations the output order is unspecified,
 and will probably differ for a TTY vs. a file. See L<perlfunc>.
 
-I<$,> is used see L<English>.
+I<$,> is used see L<perlvar>.
 
 =head1 SEE ALSO
 

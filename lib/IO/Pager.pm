@@ -3,34 +3,38 @@ package IO::Pager;
 use 5;
 use strict;
 use vars qw( $VERSION );
+use File::Spec;
 
-$VERSION = 0.03;
+$VERSION = 0.04;
 
 BEGIN {
-  foreach(
-	  $ENV{PAGER},
-	  '/usr/local/bin/less',
-	  '/usr/bin/less',
-	  '/usr/bin/more',
-	 ){
-    if( -x ){
-      $ENV{PAGER} = $_;
-      last;
+  eval 'use File::Which';
+  my $which = !$@;
+  
+  if( defined($ENV{PAGER}) ){
+    my $pager =~ (split(/(?<!\\)\s/, $ENV{PAGER}))[0];
+    
+    #Some platforms don't do -x so we use -e
+    unless( File::Spec->file_name_is_absolute($pager) && -e $pager ){
+      if( $which ){
+	#In case of non-absolute value
+	foreach( File::Which::where($ENV{PAGER}) ){
+	  do{ $ENV{PAGER} = $_; last } if -e;
+	}
+      }
     }
   }
-  unless( -x $ENV{PAGER} ){
-    eval 'use File::Which';
-    unless( $@ ){
-      foreach(
-	      File::Which::where($ENV{PAGER}), #In case of non-absolute value
-	      File::Which::where('less'),
-	      File::Which::where('more') ) {
-	if( -x ){
-	  $ENV{PAGER} = $_;
-	  last;
-	}
-      }      
+  else{
+    foreach(
+	    '/usr/local/bin/less',
+	    '/usr/bin/less',
+	    '/usr/bin/more',
+	    File::Which::where('less'),
+	    File::Which::where('more')
+	   ) {
+      do{ $ENV{PAGER} = $_; last } if -e;
     }
+    $ENV{PAGER} ||= 'more';
   }
 }
 
@@ -43,7 +47,6 @@ sub open(;$$){
   my $class = scalar @_ > 1 ? pop : undef;
   $class ||= 'IO::Pager::Unbuffered';
   eval "require $class";
-  print STDERR qq(  $class->new($_[0], $class);\n);
   $class->new($_[0], $class);
 }
 
@@ -53,11 +56,14 @@ __END__
 
 =head1 NAME
 
-IO::Pager - Pipe output to a pager if the output is to a TTY
+IO::Pager - Select a pager, optionally pipe it output if destination is a TTY
 
 =head1 SYNOPSIS
 
+  #Select a pager, sets $ENV{PAGER}
   use IO::Pager;
+
+  #Optionally pipe output
   {
     #local $STDOUT =     IO::Pager::open *STDOUT;
     local  $STDOUT = new IO::Pager       *STDOUT;
@@ -69,15 +75,14 @@ IO::Pager - Pipe output to a pager if the output is to a TTY
 
 =head1 DESCRIPTION
 
-IO::Pager is designed to programmaticly decide whether or not to point
-the STDOUT file handle into a pipe to program specified in $ENV{PAGER}
-or one of a standard list of pagers.
+IO::Pager is lightweight and can be used to locate an available pager
+and set $ENV{PAGER} (see L</NOTES>) or as a factory for creating objects
+defined elsewhere such as L<IO::Pager::Buffered> and L<IO::Pager::Unbuffered>.
 
-This class is a factory for creating objects defined elsewhere such as
-L<IO::Pager::Buffered> and L<IO::Pager::Unbuffered>.
-
-Subclasses are only required to support filehandle output methods
-and close, namely
+IO::Pager subclasses are designed to programmatically decide whether
+or not to pipe a filehandle's output to a program specified in $ENV{PAGER}.
+Subclasses are only required to support filehandle output methods and close,
+namely
 
 =over
 
@@ -146,17 +151,16 @@ The location of the default pager.
 
 =item PATH
 
-If $ENV{PAGER} is not an absolute path perl will search PATH for the binary.
+If PAGER does not specify an absolute path for the binary PATH may be used.
 
-As a last resort IO::Pager will use File::Which (if available) to search for
-B<less> and B<more>.
+See L</NOTES> for more information.
 
 =back
 
 =head1 FILES
 
-IO::Pager will fall back to these binaries, in order if I<$ENV{PAGER}>
-is not executable.
+IO::Pager may fall back to these binaries in order if
+I<$ENV{PAGER}> is not executable.
 
 =over
 
@@ -168,8 +172,34 @@ is not executable.
 
 =back
 
-Some method of using a callback as the pager seeks new data.
-Not sure why that'd be useful but it sounds cool. IO::Pager::Callback?
+See L</NOTES> for more information.
+
+=head1 NOTES
+
+The algorythm for determining which pager is to use as follows:
+
+=over
+
+=item 1. Defer to $ENV{PAGER}
+
+Use the value of $ENV{PAGER} if it exists unless File::Which is available
+and the pager in $ENV{PAGER} is determined to be unavailable.
+
+=item 2. Usual suspects
+
+Try the standard, hardcoded paths in L</FILES>.
+
+=item 3. File::Which
+
+If File::Which is available check for C<less> and L<more>.
+
+=item 4. more
+
+Set $ENV{PAGER} to C<more>
+
+=back
+
+Steps 1, 3 and 4 rely upon $ENV{PATH}.
 
 =head1 SEE ALSO
 
