@@ -31,10 +31,9 @@ File::Which is not required bu *strongly* recommended.
 
 PORTABLE
 
-This is intended to be as portable as possible, I myself have tested
-it on Solaris 9 and Windows 98. IO::Pager::Unbuffered does not appear
-to work happily with Windows 98, it'll never return control and acts
-more like IO::Pager::Page;
+This is intended to be as portable as possible, I've tested it on numerous
+platform and perl version combinations. Most work fine though you may run
+into quirks, it tends to be happiest under perl built with perlio not stdio.
 
 COPYRIGHT AND LICENSE
 

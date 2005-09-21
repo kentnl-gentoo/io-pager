@@ -35,13 +35,14 @@ EOF
     local $STDOUT = new IO::Pager *BOB;
     eval{
       my $i=0;
+      $SIG{PIPE} = sub{ die };
       while(1){
 	printf BOB "%06i Exit your pager when you're satisified you've seen enough try 'Q'.\n", $i++;
-	$SIG{PIPE} = sub{ die };
+	sleep 1 unless $i%400;
       }
     };
   }
 
-  my $A = prompt("\n\nWas that sent to a pager? [Yn]");
+  $A = prompt("\n\nWas that sent to a pager? [Yn]");
   ok( ($A =~ /^y(?:es)?/i || $A eq ''), 'Unbuffered works');
 }

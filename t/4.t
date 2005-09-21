@@ -40,6 +40,6 @@ EOF
     close(BOB);
   }
 
-  my $A = prompt("\n\nWas that sent to a pager? [Yn]");
+  $A = prompt("\n\nWas that sent to a pager? [Yn]");
   ok( ($A =~ /^y(?:es)?/i || $A eq ''), 'Buffered works');
 }

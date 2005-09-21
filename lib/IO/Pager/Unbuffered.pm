@@ -124,7 +124,6 @@ You probably want to do something with SIGPIPE eg;
     $SIG{PIPE} = sub{ die };
     local $STDOUT = IO::Pager::open(*STDOUT);
 
-    $a="a";
     while(1){
       #Do something
     }

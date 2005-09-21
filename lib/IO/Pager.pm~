@@ -13,7 +13,7 @@ BEGIN {
   
   if( defined($ENV{PAGER}) ){
 #    my $pager =~ (split(/(?<!\\)\s/, $ENV{PAGER}))[0];
-    my $pager = (split(' ', $ENV{PAGER}))[0];
+    my $pager =~ (split(' ', $ENV{PAGER}))[0];
     
     #Some platforms don't do -x so we use -e
     unless( File::Spec->file_name_is_absolute($pager) && -e $pager ){

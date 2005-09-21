@@ -28,3 +28,9 @@ Revision history for Perl extension IO::Pager.
       Fixed a bug in $ENV{PAGER} selection algorythm,
       it failed if you didn't have File::Which. It's now back to
       being only strongly recommended as opposed to required.
+
+0.06  
+
+      Fixed a stupid leftover using =~ for assignment that some perls ignored
+
+      Fixed other nits in t.pl and documentation
