@@ -1,2 +1,5 @@
-require 't/3.t';
-exec($^X, '-Mblib', 't/4.t');
+for (glob "t/*interactive.t") {
+  print "Running $_...\n";
+  system($^X, '-Mblib', $_);
+}
+print "Done\n";

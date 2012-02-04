@@ -1,27 +1,33 @@
 package IO::Pager::Page;
-use vars '$VERSION';
 
-$VERSION = 0.05;
+use strict;
 
-#The meat
-BEGIN{
+our $VERSION = 0.16;
+
+
+# The meat
+BEGIN {
+  # Do nothing in Perl compile mode
+  return if $^C;
+  # Find a pager
   use IO::Pager;
-  new IO::Pager *STDOUT;
+  # Pipe stdout to it
+  new IO::Pager *STDOUT, 'IO::Pager::Unbuffered';
 }
 
-#Gravy
-sub import{
-  shift;
-  my %opt = @_;
+# Gravy
+sub import {
+  my ($self, %opt) = @_;
   $SIG{PIPE} = sub{ exit 0; } if $opt{hush};
 }
 
 "Badee badee badee that's all folks!";
+
 __END__
 
 =head1 NAME
 
-IO::Pager::Page - use IO::Pager to emulate IO::Page, pipe STDOUT to a pager if STDOUT is a TTY
+IO::Pager::Page - Emulate IO::Page, pipe STDOUT to a pager if STDOUT is a TTY
 
 =head1 SYNOPSIS
 
@@ -29,15 +35,15 @@ Pipes STDOUT to a pager if STDOUT is a TTY
 
 =head1 DESCRIPTION
 
-IO::Pager is designed to programmaticly decide whether or not to point
-the STDOUT file handle into a pipe to program specified in $ENV{PAGER}
-or one of a standard list of pagers.
+IO::Pager was designed to programmatically decide whether or not to point
+the STDOUT file handle into a pipe to program specified in the I<PAGER>
+environment variable or one of a standard list of pagers.
 
 =head1 USAGE
 
-  BEGIN{
+  BEGIN {
     use IO::Pager::Page;
-    #use I::P::P first, just in case another module sends output to STDOUT
+    # use I::P::P first, just in case another module sends output to STDOUT
   }
   print<<HEREDOC;
   ...
@@ -45,7 +51,7 @@ or one of a standard list of pagers.
   HEREDOC
 
 If you wish to forgo the potential for a I<Broken Pipe> foible resulting
-from the user exiting the pager prematurely load IO::Pager::Page like so:
+from the user exiting the pager prematurely, load IO::Pager::Page like so:
 
   use IO::Pager::Page hush=>1;
 
@@ -57,7 +63,13 @@ L<IO::Page>, L<IO::Pager>, L<IO::Pager::Unbuffered>, L<IO::Pager::Buffered>
 
 Jerrad Pierce <jpierce@cpan.org>
 
-=head1 LICENSE
+Florent Angly <florent.angly@gmail.com>
+
+This module inspired by Monte Mitzelfelt's IO::Page 0.02
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2003-2012 Jerrad Pierce
 
 =over
 
@@ -70,5 +82,11 @@ Jerrad Pierce <jpierce@cpan.org>
 =item * Thou shalt use and dispense freely without other restrictions.
 
 =back
+
+Or, if you prefer:
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.0 or,
+at your option, any later version of Perl 5 you may have available.
 
 =cut

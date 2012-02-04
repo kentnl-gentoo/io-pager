@@ -1,36 +1,74 @@
 Revision history for Perl extension IO::Pager.
 
-0.02  Tue Jul 15 23:11:12 2003
+0.16   
 
-      original version; created by h2xs 1.22 with options
-		-X -n IO::Pager
+	Require 5.8.0 or better
 
-0.03  Tue Jul 15 23:11:12 2003
+	Removed Perl warning 'Use of tie on a handle without * is deprecated'.
 
-      Forked from IO::Page
+	No interactive questions during 'make test' (bug# 66718)
 
-0.04  Wed Jul 16 18:53:58 EDT 2003
+	Better handling of missing PAGER.
 
-      Removed a stupid debug message from IO::Pager::new
+	Look for more pagers: 'most' and 'w3m' (bug# 74519)
 
-      Improved $ENV{PAGER} selection algorythm
+	Documentation clean-up, light refactoring, more error checks.
 
-      Touched up documentation
+	Do not run IO::Pager::Page automatically when in Perl compile mode.
 
-      Added some tests
+0.10 Unreleased
 
-0.05  Thu Jul 17 20:01:55 EDT 2003
+	Added support for encodings via binmode() (bug# 67930).
 
-      Touched up documentation
+	Test: encoding, handle (glob, scalar, OO), interactive...
 
-      Added IO::Pager::Page, a clone of IO::Page "Broken pipe" foible and all
+0.07 Unreleased
 
-      Fixed a bug in $ENV{PAGER} selection algorythm,
-      it failed if you didn't have File::Which. It's now back to
-      being only strongly recommended as opposed to required.
+	Rewrote to support scalar filehandles per user request and IO::Handle
+	style OO support came along for the ride.
 
-0.06  
+	Fixed several mis-coded segments that did not affect operation.
 
-      Fixed a stupid leftover using =~ for assignment that some perls ignored
+	Added C<tell> in IO::Pager::Unbuffered to check size of buffered output.
 
-      Fixed other nits in t.pl and documentation
+	Pager open error now sets $! instead of issuing a warning, to more
+	closely emulate the C<open> experience. Check the return value as before.
+
+	Neglected to update $VERSION in last release.
+
+	Touched up the documentation.
+
+0.06 Wed Sep 21 2005
+
+	Fixed a stupid leftover using =~ for assignment that some perls ignored
+	(bug# 14692).
+
+	Fixed other nits in t.pl and documentation.
+
+0.05 Thu Jul 17 20:01:55 EDT 2003
+
+	Touched up documentation.
+
+	Added IO::Pager::Page, a clone of IO::Page "Broken pipe" foible and all.
+
+	Fixed a bug in pager selection algorithm, it failed if you did not
+	have File::Which. It is now back to being only strongly recommended as
+	opposed to required.
+
+0.04 Wed Jul 16 18:53:58 EDT 2003
+
+	Removed a stupid debug message from IO::Pager::new.
+
+	Improved PAGER selection algorithm.
+
+	Touched up documentation.
+
+	Added some tests.
+
+0.03 Tue Jul 15 23:11:12 2003
+
+	Forked from IO::Page.
+
+0.02 Tue Jul 15 23:11:12 2003
+
+	original version; created by h2xs 1.22 with options -X -n IO::Pager.

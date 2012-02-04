@@ -1,17 +1,17 @@
-IO::Pager version 0.05
+IO::Pager version 0.16
 =====================
 
-IO::Pager - Select a pager, optionally pipe it output if destination is a TTY
+IO::Pager - Select a pager and pipe text to it if destination is a TTY
 
 
 IO::Pager is lightweight and can be used to locate an available pager
-and set $ENV{PAGER} sanely or as a factory for creating objects defined
-elsewhere such as IO::Pager::Buffered and IO::Pager::Unbuffered.
+and set the PAGER environment variable sanely or as a factory for creating
+objects defined elsewhere such as IO::Pager::Buffered and IO::Pager::Unbuffered.
 
 IO::Pager subclasses are designed to programmatically decide whether
-or not to pipe a filehandle's output to a program specified in $ENV{PAGER}.
-Subclasses are only required to support filehandle output methods and close,
-namely
+or not to pipe a filehandle's output to a program specified in PAGER.
+Subclasses may inherit from IO::Pager, and implement the IO handle
+methods desired.
 
 
 INSTALLATION
@@ -20,24 +20,29 @@ To install this module type the following:
 
    perl Makefile.PL
    make
+   # Run non-interactive tests
    make test
-   perl -Mblib t.pl #Helas the real tests don't work well under Test::*
+   # Run interactive tests
+   perl -Mblib t.pl
    make install
 
 DEPENDENCIES
 
-File::Spec  this is a core module.
-File::Which is not required bu *strongly* recommended.
+Multiple core modules are used: base, Env, File::Spec, Symbol, Tie::Handle
 
-PORTABLE
+File::Which (part of the modern core) is strongly recommended
 
-This is intended to be as portable as possible, I've tested it on numerous
+Test::More is used during the installation procedure.
+
+PORTABILITY
+
+IO::Pager is intended to be as portable as possible, I've tested it on numerous
 platform and perl version combinations. Most work fine though you may run
 into quirks, it tends to be happiest under perl built with perlio not stdio.
 
 COPYRIGHT AND LICENSE
 
-Copyright (C) 2003 Jerrad Pierce
+Copyright (C) 2003-2012 Jerrad Pierce
 
  * Thou shalt not claim ownership of unmodified materials.
 
@@ -46,3 +51,9 @@ Copyright (C) 2003 Jerrad Pierce
  * Thou shalt grant the indemnity of the provider of materials.
 
  * Thou shalt use and dispense freely without other restrictions.
+
+Or, if you prefer:
+
+  This library is free software; you can redistribute it and/or modify it
+  under the same terms as Perl itself, either Perl version 5.0 or, at your
+  option, any later version of Perl 5 you may have available.

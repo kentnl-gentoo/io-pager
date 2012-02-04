@@ -1,77 +1,45 @@
 package IO::Pager::Unbuffered;
 
-use 5;
 use strict;
-use vars qw( $VERSION );
-use Tie::Handle;
+use base qw( IO::Pager );
 
-$VERSION = 0.05;
+our $VERSION = 0.16;
 
-sub new(;$){
+
+sub new(;$) {
+  my ($class, $out_fh) = @_;
   no strict 'refs';
-  my $FH = $_[1] || *{select()};
-
-  #STDOUT & STDERR are seperately bound to tty
-  if( defined( my $FHn = fileno($FH) ) ){
-    if( $FHn == fileno(STDOUT) ){
-      return 0 unless -t $FH;
+  $out_fh ||= *{select()};
+  # STDOUT & STDERR are separately bound to tty
+  if ( defined( my $FHn = fileno($out_fh) ) ) {
+    if ( $FHn == fileno(STDOUT) ) {
+      return 0 unless -t $out_fh;
     }
-    if( $FHn == fileno(STDERR) ){
-      return 0 unless -t $FH;
+    if ( $FHn == fileno(STDERR) ) {
+      return 0 unless -t $out_fh;
     }
   }
-  #This allows us to have multiple pseudo-STDOUT
+  # This allows us to have multiple pseudo-STDOUT
   return 0 unless -t STDOUT;
-
-  tie($FH, $_[0], $FH) or die "Can't tie $$FH";
-}
-
-sub open(;$){
-  new IO::Pager::Unbuffered;
-}
-
-sub TIEHANDLE{
-  my $PAGER;
-
-  unless( CORE::open($PAGER, "| $ENV{PAGER}") ){
-    warn "Can't pipe to $ENV{PAGER}: $!\n";
-    return 0;
-  }
-
-  bless [$_[1], $PAGER, 0], $_[0];
-}
-
-sub PRINT{
-  my $ref = shift;
-  CORE::print {$ref->[1]} @_;
-}
-
-sub PRINTF{
-  PRINT shift, sprintf shift, @_;
-}
-
-sub WRITE{
-  PRINT shift, substr $_[0], $_[2]||0, $_[1];
+  tie *$out_fh, $class, $out_fh
+    or die "Could not tie $$out_fh\n";
 }
 
 
-*DESTROY = *CLOSE;
-sub CLOSE{
-  local $^W = 0;
-  my $ref = $_[0];
-  return if $ref->[2]++;
-  untie $ref->[0];
-
-  close($ref->[1]);
+sub open(;$) {
+  my ($out_fh) = @_;
+  new IO::Pager::Unbuffered $out_fh;
 }
+
 
 1;
+
+
 __END__
-=pod
 
 =head1 NAME
 
-IO::Pager::Unbuffered - Pipe output to a pager if output is to a TTY
+IO::Pager::Unbuffered - Pipe output to a pager if destination is to a TTY
 
 =head1 SYNOPSIS
 
@@ -87,9 +55,9 @@ IO::Pager::Unbuffered - Pipe output to a pager if output is to a TTY
 
 =head1 DESCRIPTION
 
-IO::Pager is designed to programmaticly decide whether or not to point
-the STDOUT file handle into a pipe to program specified in $ENV{PAGER}
-or one of a standard list of pagers.
+IO::Pager is designed to programmatically decide whether or not to point
+the STDOUT file handle into a pipe to program specified in the I<PAGER>
+environment variable or one of a standard list of pagers.
 
 =head2 new( [FILEHANDLE] )
 
@@ -111,7 +79,7 @@ An alias for new.
 =head2 close( FILEHANDLE )
 
 Explicitly close the filehandle, if a pager was deemed necessary this
-will kill it. Normally you'd just wait for the user to exit the pager
+will kill it. Normally you would just wait for the user to exit the pager
 and the object to pass out of scope.
 
 I<This does not default to the current filehandle>.
@@ -120,30 +88,34 @@ I<This does not default to the current filehandle>.
 
 You probably want to do something with SIGPIPE eg;
 
-  eval{
-    $SIG{PIPE} = sub{ die };
+  eval {
+    $SIG{PIPE} = sub { die };
     local $STDOUT = IO::Pager::open(*STDOUT);
 
-    while(1){
-      #Do something
+    while (1) {
+      # Do something
     }
   }
 
-  #Do something else
+  # Do something else
 
 =head1 SEE ALSO
 
-L<IO::Pager>, L<IO::Pager::Buffered>, L<IO::Pager::Page>
+L<IO::Pager>, L<IO::Pager::Buffered>, L<IO::Pager::Page>,
 
 =head1 AUTHOR
 
 Jerrad Pierce <jpierce@cpan.org>
 
-This module is forked from IO::Page 0.02 by Monte Mitzelfelt
+Florent Angly <florent.angly@gmail.com>
+
+This module was inspired by Monte Mitzelfelt's IO::Page 0.02
 
 Significant proddage provided by Tye McQueen.
 
-=head1 LICENSE
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2003-2012 Jerrad Pierce
 
 =over
 
@@ -156,5 +128,11 @@ Significant proddage provided by Tye McQueen.
 =item * Thou shalt use and dispense freely without other restrictions.
 
 =back
+
+Or, if you prefer:
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.0 or,
+at your option, any later version of Perl 5 you may have available.
 
 =cut
