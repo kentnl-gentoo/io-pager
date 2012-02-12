@@ -1,34 +1,25 @@
 package IO::Pager::Buffered;
+our $VERSION = 0.20;
 
 use strict;
 use base qw( IO::Pager );
+use SelectSaver;
 
-our $VERSION = 0.16;
 
+sub new(;$) {  # [FH]
+  my($class, $tied_fh);
 
-sub new(;$) {
-  my ($class, $out_fh) = @_;
-  no strict 'refs';
-  $out_fh ||= *{select()};
-  # STDOUT & STDERR are separately bound to tty
-  if ( defined( my $FHn = fileno($out_fh) ) ) {
-    if ( $FHn == fileno(STDOUT) ) {
-      return 0 unless -t $out_fh;
-    }
-    if ( $FHn == fileno(STDERR) ) {
-      return 0 unless -t $out_fh;
-    }
-  }
-  # This allows us to have multiple pseudo-STDOUT
-  return 0 unless -t STDOUT;
-  tie *$out_fh, $class, $out_fh
-    or die "Could not tie $$out_fh\n";
+  eval { ($class, $tied_fh) = &IO::Pager::_init };
+  # leave filehandle alone
+  return $_[1] if defined($class) && $class eq '0' or $@ =~ '!TTY';
+  $!=$@, return 0 if $@ =~ 'pipe';
+
+  tie *$tied_fh, $class, $tied_fh or return 0;
 }
 
-
-sub open(;$) {
-  my ($out_fh) = @_;
-  new IO::Pager::Buffered $out_fh;
+#Punt to base, preserving FH ($_[0]) for pass by reference to gensym
+sub open(;$) { # [FH]
+  IO::Pager::open($_[0], 'IO::Pager::Buffered');
 }
 
 
@@ -51,7 +42,19 @@ sub CLOSE {
 sub TELL {
   # Return the size of the buffer
   my ($self) = @_;
-  return exists($self->{buffer}) ? bytes::length($self->{buffer}) : 0;
+  use bytes;
+  return exists($self->{buffer}) ? length($self->{buffer}) : 0;
+}
+
+
+sub flush(;*) {
+  my ($self) = @_;
+  if( exists $self->{buffer} ){
+    my $saver = SelectSaver->new($self->{real_fh});
+    local $|=1;
+    ($_, $self->{buffer}) = ( $self->{buffer}, '');
+    $self->SUPER::PRINT($_);
+  }
 }
 
 
@@ -61,25 +64,37 @@ __END__
 
 =head1 NAME
 
-IO::Pager::Buffered - Pipe deferred output to a pager if destination is to a TTY
+IO::Pager::Buffered - Pipe deferred output to PAGER if destination is a TTY
 
 =head1 SYNOPSIS
 
   use IO::Pager::Buffered;
   {
-    #local $STDOUT =     IO::Pager::Buffered::open *STDOUT;
-    local  $STDOUT = new IO::Pager::Buffered       *STDOUT;
+    local $token = IO::Pager::Buffered::open *STDOUT;
     print <<"  HEREDOC" ;
     ...
     A bunch of text later
     HEREDOC
   }
 
+  {
+    # You can also use scalar filehandles...
+    my $token = IO::Pager::Buffered::open($FH) or warn($!);
+    print $FH "No globs or barewords for us thanks!\n";
+  }
+
+  {
+    # ...or an object interface
+    my $token = new IO::Pager::Buffered;
+
+    $token->print("OO shiny...\n");
+  }
+
 =head1 DESCRIPTION
 
-IO::Pager is designed to programmatically decide whether or not to point
-the STDOUT file handle into a pipe to program specified in the I<PAGER>
-environment variable or one of a standard list of pagers.
+IO::Pager subclasses are designed to programmatically decide whether
+or not to pipe a filehandle's output to a program specified in I<PAGER>;
+determined and set by IO::Pager at runtime if not yet defined.
 
 This subclass buffers all output for display upon exiting the current scope.
 If this is not what you want look at another subclass such as
@@ -89,6 +104,10 @@ showing only warnings on STDERR, then displaying the output to STDOUT after.
 Or alternately letting output to STDOUT slide by and defer warnings for later
 perusal.
 
+=head1 METHODS
+
+Class-specific method specifics below, others are inherited from IO::Pager.
+
 =head2 new( [FILEHANDLE] )
 
 Instantiate a new IO::Pager to paginate FILEHANDLE if necessary.
@@ -96,29 +115,17 @@ I<Assign the return value to a scoped variable>. Output does not
 occur until all references to this variable are destroyed eg;
 upon leaving the current scope. See L</DESCRIPTION>.
 
-=over
-
-=item FILEHANDLE
-
-Defaults to currently select()-ed FILEHANDLE.
-
-=back
-
-=head2 open( [FILEHANDLE] )
-
-An alias for new.
-
-=head2 close( FILEHANDLE )
-
-Explicitly close the filehandle, this stops collecting and displays the
-output, executing a pager if necessary. Normally you would just wait for
-the object to pass out of scope.
-
-I<This does not default to the current filehandle>.
-
 =head2 tell( FILEHANDLE )
 
 Returns the size of the buffer in bytes.
+
+=head2 flush( FILEHANDLE )
+
+Immediately flushes the contents of the buffer.
+
+If the last print did not end with a newline, the text from the
+preceding newline to the end of the buffer will be flushed but
+is unlikely to display until a newline is printed and flushed.
 
 =head1 CAVEATS
 

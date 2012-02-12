@@ -1,88 +1,76 @@
 package IO::Pager::Unbuffered;
+our $VERSION = 0.20;
 
 use strict;
 use base qw( IO::Pager );
+use SelectSaver;
 
-our $VERSION = 0.16;
 
+sub new(;$) {  # [FH]
+  my($class, $tied_fh);
 
-sub new(;$) {
-  my ($class, $out_fh) = @_;
-  no strict 'refs';
-  $out_fh ||= *{select()};
-  # STDOUT & STDERR are separately bound to tty
-  if ( defined( my $FHn = fileno($out_fh) ) ) {
-    if ( $FHn == fileno(STDOUT) ) {
-      return 0 unless -t $out_fh;
-    }
-    if ( $FHn == fileno(STDERR) ) {
-      return 0 unless -t $out_fh;
-    }
+  eval { ($class, $tied_fh) = &IO::Pager::_init };
+  # leave filehandle alone
+  return $_[1] if defined($class) && $class eq '0' or $@ =~ '!TTY';
+  $!=$@, return 0 if $@ =~ 'pipe';
+
+  my $self = tie *$tied_fh, $class, $tied_fh or return 0;
+  { # Truly unbuffered
+    my $saver = SelectSaver->new($self->{real_fh});
+    $|=1;
   }
-  # This allows us to have multiple pseudo-STDOUT
-  return 0 unless -t STDOUT;
-  tie *$out_fh, $class, $out_fh
-    or die "Could not tie $$out_fh\n";
+  return $self;
 }
 
-
-sub open(;$) {
-  my ($out_fh) = @_;
-  new IO::Pager::Unbuffered $out_fh;
+#Punt to base, preserving FH ($_[0]) for pass by reference to gensym
+sub open(;$) { # [FH]
+  IO::Pager::open($_[0], 'IO::Pager::Unbuffered');
 }
 
 
 1;
 
-
 __END__
 
 =head1 NAME
 
-IO::Pager::Unbuffered - Pipe output to a pager if destination is to a TTY
+IO::Pager::Unbuffered - Pipe output to PAGER if destination is a TTY
 
 =head1 SYNOPSIS
 
   use IO::Pager::Unbuffered;
   {
-    #local $STDOUT =     IO::Pager::Unbuffered::open *STDOUT;
-    local  $STDOUT = new IO::Pager::Unbuffered       *STDOUT;
+    local $STDOUT = IO::Pager::Unbuffered::open *STDOUT;
     print <<"  HEREDOC" ;
     ...
     A bunch of text later
     HEREDOC
   }
 
+  {
+    # You can also use scalar filehandles...
+    my $token = IO::Pager::Unbuffered::open($FH) or warn($!);
+    print $FH "No globs or barewords for us thanks!\n";
+  }
+
+  {
+    # ...or an object interface
+    my $token = new IO::Pager::Unbuffered;
+
+    $token->print("OO shiny...\n");
+  }
+
 =head1 DESCRIPTION
 
-IO::Pager is designed to programmatically decide whether or not to point
-the STDOUT file handle into a pipe to program specified in the I<PAGER>
-environment variable or one of a standard list of pagers.
+IO::Pager subclasses are designed to programmatically decide whether
+or not to pipe a filehandle's output to a program specified in I<PAGER>;
+determined and set by IO::Pager at runtime if not yet defined.
 
-=head2 new( [FILEHANDLE] )
+See L<IO::Pager> for method details.
 
-Instantiate a new IO::Pager to paginate FILEHANDLE if necessary.
-I<Assign the return value to a scoped variable>.
+=head1 METHODS
 
-=over
-
-=item FILEHANDLE
-
-Defaults to currently select()-ed FILEHANDLE.
-
-=back
-
-=head2 open( [FILEHANDLE] )
-
-An alias for new.
-
-=head2 close( FILEHANDLE )
-
-Explicitly close the filehandle, if a pager was deemed necessary this
-will kill it. Normally you would just wait for the user to exit the pager
-and the object to pass out of scope.
-
-I<This does not default to the current filehandle>.
+All methods are inherited from IO::Pager; except for instantiation.
 
 =head1 CAVEATS
 

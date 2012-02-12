@@ -12,10 +12,10 @@ SKIP: {
 
 
   {
-    use Symbol;
-    my $BOB =Symbol::gensym();
+    my $BOB;
     local $STDOUT = IO::Pager::open($BOB, 'IO::Pager::Buffered');
 
+    is ref($BOB), 'GLOB', 'Gensym';
     isa_ok $STDOUT, 'IO::Pager::Buffered';
     isa_ok $STDOUT, 'Tie::Handle';
 

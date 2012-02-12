@@ -1,13 +1,12 @@
 package IO::Pager;
+our $VERSION = 0.20;
 
 use 5.008; #At least, for decent perlio, and other modernisms
 use strict;
+use base qw( Tie::Handle );
 use Env qw( PAGER );
 use File::Spec;
-use base qw( Tie::Handle );
-
-our $VERSION = 0.16;
-
+use Symbol;
 
 sub find_pager {
   # Return the name (or path) of a pager that IO::Pager can use
@@ -26,13 +25,14 @@ sub find_pager {
 
   # Then search pager amongst usual suspects
   if (not defined $io_pager) {
-    my @pagers = ('/usr/local/bin/less', '/usr/bin/less', '/usr/bin/more');
+    my @pagers = ('/etc/alternatives/pager',
+		  '/usr/local/bin/less', '/usr/bin/less', '/usr/bin/more');
     $io_pager = _check_pagers(\@pagers, $which) 
   }
 
-  # Then try for common pagers in more exotic places
+  # Then check PATH for other pagers
   if ( (not defined $io_pager) && $which ) {
-    my @pagers = ['less', 'most', 'w3m', 'more'];
+    my @pagers = ('less', 'most', 'w3m', 'lv', 'pg', 'more');
     $io_pager = _check_pagers(\@pagers, $which );
   }
 
@@ -41,7 +41,6 @@ sub find_pager {
 
   return $io_pager;
 }
-
 
 sub _check_pagers {
   my ($pagers, $which) = @_;
@@ -66,45 +65,66 @@ sub _check_pagers {
   return $io_pager;
 }
 
-
-BEGIN {
-  # Set the PAGER environment variable to something reasonable
+#Should have this as first block for clarity, but not with its use of a sub :-/
+BEGIN { # Set the $ENV{PAGER} to something reasonable
   $PAGER = find_pager();
 }
 
 
-sub new(;$$) {
-  my ($class, $out_fh, $subclass) = @_;
-  IO::Pager::open($out_fh, $subclass);
-}
-
-
-sub open(;$$) {
-  my ($out_fh, $subclass) = @_;
+#Factory
+sub open(;$$) { # [FH], [CLASS]
+  #Leave filehandle in @_ for pass by reference to allow gensym
+  my $subclass = $_[1] if exists($_[1]);
   $subclass ||= 'IO::Pager::Unbuffered';
   $subclass =~ s/^(?!IO::Pager::)/IO::Pager::/;
   eval "require $subclass" or die "Could not load $subclass: $@\n";
-  $subclass->new($out_fh, $subclass);
+  $subclass->new($_[0]);
 }
 
-#sub OPEN{
-#  
-#}
+#Alternate entrance: drop class but leave FH, subclass
+sub new(;$$) { # [FH], [CLASS]
+  shift, &IO::Pager::open;
+}
+
+
+sub _init{ # CLASS, [FH] ## Note reversal of order due to CLASS from new()
+  #Assign by reference if empty scalar given as filehandle
+  $_[1] = gensym() if !defined($_[1]);
+
+#  my ($class, $real_fh) = @_;
+  no strict 'refs';
+  $_[1] ||= *{select()};
+
+  # Are we on a TTY? STDOUT & STDERR are separately bound
+  if ( defined( my $FHn = fileno($_[1]) ) ) {
+    if ( $FHn == fileno(STDOUT) ) {
+      die '!TTY' unless -t $_[1];
+    }
+    if ( $FHn == fileno(STDERR) ) {
+      die '!TTY' unless -t $_[1];
+    }
+  }
+
+  # XXX This allows us to have multiple pseudo-STDOUT
+#  return 0 unless -t STDOUT;
+
+  return ($_[0], $_[1]);
+}
+
 
 # Methods required for implementing a tied filehandle class
 
 sub TIEHANDLE {
-  my ($class, $out_fh) = @_;
+  my ($class, $tied_fh) = @_;
   unless ( $PAGER ){
     die "The PAGER environment variable is not defined, you may need to set it manually.";
   }
-  my($tied_fh, $child);
-  unless ( $child = CORE::open($tied_fh, "| $PAGER") ){
-    $! = "Could not pipe to PAGER ('$PAGER'): $!\n";
-    return 0;
+  my($real_fh, $child);
+  unless ( $child = CORE::open($real_fh, "| $PAGER") ){
+    die "Could not pipe to PAGER ('$PAGER'): $!\n";
   }
   return bless {
-                'out_fh'  => $out_fh,
+                'real_fh' => $real_fh,
                 'tied_fh' => $tied_fh,
                 'child'   => $child
                }, $class;
@@ -113,37 +133,36 @@ sub TIEHANDLE {
 
 sub BINMODE {
   my ($self, $layer) = @_;
-  CORE::binmode($self->{tied_fh}, $layer||':raw');
+  CORE::binmode($self->{real_fh}, $layer||':raw');
 }
 
 
 sub PRINT {
   my ($self, @args) = @_;
-  CORE::print {$self->{tied_fh}} @args or die "Could not print on tied filehandle\n$!\n";
+  CORE::print {$self->{real_fh}} @args or die "Could not print to PAGER: $!\n";
 }
 
 
 sub PRINTF {
   my ($self, $format, @args) = @_;
-  PRINT $self, sprintf($format, @args);
+  $self->PRINT(sprintf($format, @args));
 }
-
 
 sub WRITE {
   my ($self, $scalar, $length, $offset) = @_;
-  PRINT $self, substr($scalar, $offset||0, $length);
+  $self->PRINT(substr($scalar, $offset||0, $length));
 }
 
 
 sub UNTIE {
   my ($self) = @_;
-  CORE::close($self->{tied_fh});
+  CORE::close($self->{real_fh});
 }
 
 
 sub CLOSE {
   my ($self) = @_;
-  untie *{$self->{out_fh}};
+  untie *{$self->{tied_fh}};
 }
 
 
@@ -151,6 +170,12 @@ sub TELL {
   #Buffered classes provide their own, and others may use this in another way
   return undef;
 }
+
+foreach my $method ( qw(BINMODE CLOSE PRINT PRINTF TELL WRITE) ){
+  no strict 'refs';
+  *{lc($method)} = \&{$method};
+}
+
 
 1;
 
@@ -167,12 +192,33 @@ IO::Pager - Select a pager and pipe text to it if destination is a TTY
 
   # Optionally, pipe output to it
   {
-    #local $retval =     IO::Pager::open *STDOUT; # Defaults to 'Unbuffered'
-    local  $retval = new IO::Pager       *STDOUT, 'Buffered';
+    # TIMTOWTDI, not an exhaustive list but you can infer the others
+    my $token =     IO::Pager::open *STDOUT; # Unbuffered is  default subclass
+    my $token = new IO::Pager       *STDOUT,  'Unbuffered'; # Specify subclass
+    my $token =     IO::Pager::Unbuffered::open *STDOUT;    # Must 'use' class!
+    my $token = new IO::Pager::Unbuffered       *STDOUT;    # Must 'use' class!
+
+
     print <<"  HEREDOC" ;
     ...
     A bunch of text later
     HEREDOC
+
+    # $token passes out of scope and filehandle is automagically closed
+    # NOT YET IMPLEMENTED XXX
+  }
+
+  {
+    # You can also use scalar filehandles...
+    my $token = IO::Pager::open($FH) or warn($!);
+    print $FH "No globs or barewords for us thanks!\n";
+  }
+
+  {
+    # ...or an object interface
+    my $token = new IO::Pager::Buffered;
+
+    $token->print("OO shiny...\n");
   }
 
 =head1 DESCRIPTION
@@ -184,70 +230,69 @@ I/O objects such as L<IO::Pager::Buffered> and L<IO::Pager::Unbuffered>.
 IO::Pager subclasses are designed to programmatically decide whether
 or not to pipe a filehandle's output to a program specified in I<PAGER>.
 Subclasses may implement only the IO handle methods desired and inherit
-the following from IO::Pager:
+the remainder of those outlined below from IO::Pager. For anything else,
+YMMV. See the appropriate subclass for implementation specific details.
 
-=over
-
-=item BINMODE
-
-Used to set the I/O layer a.ka. discipline of a filehandle,
-such as C<':utf8'> for UTF-8 encoding.
-
-=item CLOSE
-
-Supports close() of the filehandle.
-
-=item PRINT
-
-Supports print() to the filehandle.
-
-=item PRINTF
-
-Supports printf() to the filehandle.
-
-=item WRITE
-
-Supports syswrite() to the filehandle.
-
-=back
-
-For anything else, YMMV.
+=head1 METHODS
 
 =head2 new( [FILEHANDLE], [SUBCLASS] )
 
-Instantiate a new IO::Pager to paginate FILEHANDLE if necessary.
-I<Assign the return value to a scoped variable>.
+An alias for open.
 
-The object will be of type SUBCLASS (L<IO::Pager::Unbuffered> by default). See
-the appropriate subclass for details.
+=head2 open( [FILEHANDLE], [SUBCLASS] )
+
+Instantiate a new IO::Pager, which will paginate output sent to
+FILEHANDLE if interacting with a TTY.
+
+Save the return value to check for errors, use as an object,
+and (NOT YET IMPLEMENTED) implicitly close the handle when
+the variable passes out of scope.
 
 =over
 
 =item FILEHANDLE
 
-Defaults to currently select()-ed FILEHANDLE.
+You may provide a glob or scalar.
 
-=item EXPR
+Defaults to currently select()-ed F<FILEHANDLE>.
 
-An expression which evaluates to the subclass of object to create.
+=item SUBCLASS
+
+Specifies which variety of IO::Pager to create.
+This accepts fully qualified packages I<IO::Pager::Buffered>,
+or simply the third portion of the package name I<Buffered> for brevity.
 
 Defaults to L<IO::Pager::Unbuffered>.
 
+Returns false and sets I<$!> on failure, same as perl's C<open>.
+
 =back
-
-=head2 open( [FILEHANDLE], [EXPR] )
-
-An alias for new.
 
 =head2 close( FILEHANDLE )
 
 Explicitly close the filehandle, this stops any redirection of output
-on FILEHANDLE that may have been warranted. Normally you'd just wait
-for the object to pass out of scope.
+on FILEHANDLE that may have been warranted.
+
+Normally you'd just wait for the object to pass out of scope. NOT YET IMPLEMENTED
 
 I<This does not default to the current filehandle>.
 
-See the appropriate subclass for implementation specific details.
+=head2 binmode( FILEHANDLE )
+
+Used to set the I/O layer a.k.a. discipline of a filehandle,
+such as C<':utf8'> for UTF-8 encoding.
+
+=head2 print ( FILEHANDLE LIST )
+
+print() to the filehandle.
+
+=head2 printf ( FILEHANDLE FORMAT, LIST )
+
+printf() to the filehandle.
+
+=head2 syswrite( FILEHANDLE, SCALAR, [LENGTH], [OFFSET] )
+
+syswrite() to the filehandle.
 
 =head1 ENVIRONMENT
 
@@ -259,7 +304,7 @@ The location of the default pager.
 
 =item PATH
 
-If PAGER does not specify an absolute path for the binary PATH may be used.
+If the location in PAGER is not absolute, PATH may be searched.
 
 See L</NOTES> for more information.
 
@@ -271,6 +316,8 @@ IO::Pager may fall back to these binaries in order if I<PAGER> is not
 executable.
 
 =over
+
+=item /etc/alternatives/pager
 
 =item /usr/local/bin/less
 
@@ -290,7 +337,7 @@ The algorithm for determining which pager to use is as follows:
 
 =item 1. Defer to I<PAGER>
 
-If the I<PAGER> environment variable is set, use the pagger it identifies,
+If the I<PAGER> environment variable is set, use the pager it identifies,
 unless this pager is not available.
 
 =item 2. Usual suspects
@@ -299,8 +346,8 @@ Try the standard, hardcoded paths in L</FILES>.
 
 =item 3. File::Which
 
-If File::Which is available, use the first pager possible amongst C<less>,
-C<most>, C<w3m> and L<more>.
+If File::Which is available, use the first pager possible amongst
+C<less>, C<most>, C<w3m>, C<lv>, C<pg> and L<more>.
 
 =item 4. more
 

@@ -9,17 +9,17 @@ WriteMakefile(
        'Config'         => 0,
        'Env'            => 0,
        'Exporter'       => 0,
+       'File::Temp'     => 0,
     },
     'PREREQ_PM'         => {
        'base'           => 0,
        'Env'            => 0,
        'File::Spec'     => 0,
+       'File::Which'    =>0,
+       'SelectSaver'    => 0,
        'Symbol'         => 0,
        'Tie::Handle'    => 0,
     },
-    'META_MERGE' => { recommends => {
-       'File::Which'    => 0,
-    }},
     ($] >= 5.005 ?  # Add these new keywords supported since 5.005
        (
         ABSTRACT_FROM    => 'lib/IO/Pager.pm', # retrieve abstract from module
