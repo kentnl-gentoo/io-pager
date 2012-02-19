@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               IO-Pager
-version:            0.2
+version:            0.24
 abstract:           Select a pager and pipe text to it if destination is a TTY
 author:
     - Jerrad Pierce <jpierce@cpan.org>, Florent Angly <florent.angly@gmail.com>

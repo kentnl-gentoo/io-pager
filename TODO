@@ -1,7 +1,7 @@
 Important things here and in code flagged with XXX
 
 0.20
-	"Fix" multi-pseudo-STDOUT disabled in 9-open.t implementation?
+	"Fix" multi-pseudo-STDOUT disabled in 09-open.t implementation?
 
 	Alter tests to cover all invocation schemes,
 	and document location of each in matrix?
@@ -14,20 +14,14 @@ Important things here and in code flagged with XXX
 
 	"3-arg open" with layer?
 
-0.16
-	XXX Test documented implicit closing when object passes out of scope;
-	previously via alias of DESTROY to CLOSE, but unnice if explicit close.
-
-	Clean-up/clarify returned object vs. filehandle?
-		...(partially) done if OO is documented (.20)
-
 0.10
-	Implement eof?
+	XXX Implement eof?
 		To indicate SIGPIPE? ...handler localization difficulties (.16)
 
-	Hijack something to return filehandle(?), child pid(!),
-	but this amounts to nothing more than showing our private parts?
-	Alas tied handles have no STAT method to pass child as inode (.16)
+	Hijack something to return filehandle(?), child (DONE 0.24), etc.
+	...but this amounts to nothing more than showing our private parts?
+		Alas tied FH have no STAT method to pass child as inode (.16)
+		Accessor for pager too? (.21)
 
-0.02	Tue Jul 15 23:24:38 EDT 2003
+0.02
 	Implement IO::Pager::Callback, just because it sounds cool?
