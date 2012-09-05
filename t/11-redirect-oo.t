@@ -8,15 +8,13 @@ use t::TestUtils;
 my(undef, $tempname) = do{ $^W=0; File::Temp::tempfile(OPEN=>0)};
 END{ close(TMP); unlink $tempname or die "Could not unlink '$tempname': $!" }
 
-#Print the heredoc in 08-redirect.pl to temp file via redirection
-my $q = q['];
-$q = q["] if $^O =~ /MSWin32/;
-system qq($^X -Mblib -MIO::Pager::Page -e $q require q[t/08-redirect.pl]; print \$txt $q >$tempname);
+#Print the heredoc in 11-redirect.pl to temp file via redirection
+system qq($^X t/11-redirect-oo.pl >$tempname);
 
 open(TMP, $tempname) or die "Could not open tmpfile: $!\n";
 my $slurp = do{ undef $/; <TMP> };
 
 our $txt; require 't/08-redirect.pl';
-ok($txt eq $slurp, 'Redirection (IO::Pager::Page)');
+ok($txt eq $slurp, 'Redirection with OO');
 
 done_testing;

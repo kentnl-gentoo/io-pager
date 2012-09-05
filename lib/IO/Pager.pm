@@ -1,11 +1,12 @@
 package IO::Pager;
-our $VERSION = 0.24;
+our $VERSION = 0.30;
 
 use 5.008; #At least, for decent perlio, and other modernisms
 use strict;
 use base qw( Tie::Handle );
 use Env qw( PAGER );
 use File::Spec;
+use PerlIO;
 use Symbol;
 
 use overload '+' => "PID", bool=> "PID";
@@ -76,6 +77,13 @@ BEGIN { # Set the $ENV{PAGER} to something reasonable
 
 #Factory
 sub open(;$$) { # [FH], [CLASS]
+    &new(undef, @_, 'procedural');
+}
+
+#Alternate entrance: drop class but leave FH, subclass
+sub new(;$$) { # [FH], [CLASS]
+  shift;
+
   #Leave filehandle in @_ for pass by reference to allow gensym
   my $subclass = $_[1] if exists($_[1]);
   $subclass ||= 'IO::Pager::Unbuffered';
@@ -84,17 +92,11 @@ sub open(;$$) { # [FH], [CLASS]
   $subclass->new($_[0]);
 }
 
-#Alternate entrance: drop class but leave FH, subclass
-sub new(;$$) { # [FH], [CLASS]
-  shift, &IO::Pager::open;
-}
-
 
 sub _init{ # CLASS, [FH] ## Note reversal of order due to CLASS from new()
   #Assign by reference if empty scalar given as filehandle
   $_[1] = gensym() if !defined($_[1]);
 
-#  my ($class, $real_fh) = @_;
   no strict 'refs';
   $_[1] ||= *{select()};
 
@@ -123,7 +125,19 @@ sub TIEHANDLE {
     die "The PAGER environment variable is not defined, you may need to set it manually.";
   }
   my($real_fh, $child);
-  unless ( $child = CORE::open($real_fh, "| $PAGER") ){
+  if ( $child = CORE::open($real_fh, "| $PAGER") ){
+    my @oLayers = PerlIO::get_layers($tied_fh, details=>1, output=>1);
+    my $layers = '';
+    for(my $i=0;$i<$#oLayers;$i+=3){
+      #An extra base layer requires more keystrokes to exit
+      next if $oLayers[$i] =~ /unix|stdio/ && !defined($oLayers[+1]);
+
+      $layers .= ":$oLayers[$i]";
+      $layers .=  '(' . ($oLayers[$i+1]) . ')' if defined($oLayers[$i+1]);
+    }
+    CORE::binmode($real_fh, $layers);
+  }
+  else{
     die "Could not pipe to PAGER ('$PAGER'): $!\n";
   }
   return bless {
@@ -148,6 +162,12 @@ sub PRINT {
 sub PRINTF {
   my ($self, $format, @args) = @_;
   $self->PRINT(sprintf($format, @args));
+}
+
+sub say {
+  my ($self, @args) = @_;
+  $args[-1] .= "\n";
+  $self->PRINT(@args);
 }
 
 sub WRITE {
@@ -243,7 +263,8 @@ YMMV. See the appropriate subclass for implementation specific details.
 
 =head2 new( [FILEHANDLE], [SUBCLASS] )
 
-An alias for open.
+Almost identical to open, except that you will get an L<IO::Handle>
+back if there's no TTY to allow for IO::Pager agnostic programming.
 
 =head2 open( [FILEHANDLE], [SUBCLASS] )
 

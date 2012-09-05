@@ -1,5 +1,5 @@
 package IO::Pager::Buffered;
-our $VERSION = 0.24;
+our $VERSION = 0.30;
 
 use strict;
 use base qw( IO::Pager );
@@ -10,8 +10,15 @@ sub new(;$) {  # [FH]
   my($class, $tied_fh);
 
   eval { ($class, $tied_fh) = &IO::Pager::_init };
-  # leave filehandle alone
-  return $_[1] if defined($class) && $class eq '0' or $@ =~ '!TTY';
+  #We're not on a TTY so...
+  if( defined($class) && $class eq '0' or $@ =~ '!TTY' ){
+      #...leave filehandle alone if procedural
+      return $_[1] if defined($_[2]) && $_[2] eq 'procedural';
+
+      #...fall back to IO::Handle for transparent OO programming
+      eval "require IO::Handle" or die $@;
+      return IO::Handle->new_from_fd(fileno($_[1]), 'w');
+  }
   $!=$@, return 0 if $@ =~ 'pipe';
 
   tie *$tied_fh, $class, $tied_fh or return 0;
@@ -19,7 +26,8 @@ sub new(;$) {  # [FH]
 
 #Punt to base, preserving FH ($_[0]) for pass by reference to gensym
 sub open(;$) { # [FH]
-  IO::Pager::open($_[0], 'IO::Pager::Buffered');
+#  IO::Pager::open($_[0], 'IO::Pager::Buffered');
+  &new('IO::Pager::Buffered', $_[0]);
 }
 
 
@@ -109,12 +117,17 @@ perusal.
 
 Class-specific method specifics below, others are inherited from IO::Pager.
 
-=head2 new( [FILEHANDLE] )
+=head2 open( [FILEHANDLE] )
 
 Instantiate a new IO::Pager to paginate FILEHANDLE if necessary.
 I<Assign the return value to a scoped variable>. Output does not
 occur until all references to this variable are destroyed eg;
 upon leaving the current scope. See L</DESCRIPTION>.
+
+=head2 new( [FILEHANDLE] )
+
+Almost identical to open, except that you will get an L<IO::Handle>
+back if there's no TTY to allow for IO::Pager agnostic programming.
 
 =head2 tell( FILEHANDLE )
 
