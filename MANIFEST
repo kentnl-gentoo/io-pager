@@ -23,4 +23,5 @@ t/10-close_interactive.t
 t/11-redirect-oo.pl
 t/11-redirect-oo.t
 t/TestUtils.pm
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
