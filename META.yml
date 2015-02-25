@@ -31,4 +31,4 @@ requires:
   Symbol: 0
   Tie::Handle: 0
   base: 0
-version: 0.32
+version: 0.34
