@@ -1,5 +1,5 @@
 package IO::Pager;
-our $VERSION = 0.35; #Really 0.34
+our $VERSION = 0.36; #Really 0.36
 
 use 5.008; #At least, for decent perlio, and other modernisms
 use strict;
@@ -91,10 +91,10 @@ sub new(*;$@) { # FH, [MODE], [CLASS]
   my %args;
   if( ref($_[-1]) eq 'HASH' ){
     %args = %{pop()};
-    warn "REMAINDER? (@_)", scalar @_;
+    #warn "REMAINDER? (@_)", scalar @_;
     push(@_, $args{procedural});
   }
-  else{
+  elsif( defined($_[1]) ){
     $args{mode} = splice(@_, 1, 1) if $_[1] =~ /^:/;
     $args{subclass} = pop if exists($_[1]);
   }

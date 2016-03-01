@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use File::Temp;
-use Test::More;
+use Test::More 0.88;
 use t::TestUtils;
 
 use bignum;

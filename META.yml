@@ -7,7 +7,7 @@ build_requires:
   Env: 0
   Exporter: 0
   File::Temp: 0
-  Test::More: 0
+  Test::More: 0.88
 configure_requires:
   ExtUtils::MakeMaker: 0
 dynamic_config: 1
@@ -31,4 +31,4 @@ requires:
   Symbol: 0
   Tie::Handle: 0
   base: 0
-version: 0.35
+version: 0.36

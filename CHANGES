@@ -1,5 +1,14 @@
 Revision history for Perl extension IO::Pager.
 
+0.36	Mon Feb 29 2016
+	Fix Use of uninitialized value at IO/Pager.pm line 98
+
+	Remove dubgging statement.
+
+	Add some additional reporting to interactive tests.
+
+	Specify minimum Test::More version.
+
 0.35    Fri Jan 01 2016
 
 	Update test 11 for Windows; okay in CMD, PowerShell and MSYS
