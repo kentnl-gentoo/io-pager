@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 use Test::More 0.88;
-use t::TestUtils;
+require './t/TestUtils.pm';
+t::TestUtils->import();
 
 # Test unbuffered paging
 
@@ -29,7 +30,7 @@ SKIP: {
     close($BOB);
   }
 
-  my $A = prompt "\nWas the text displayed in a pager? [Yn]";
+  my $A = prompt("\nWas the text displayed in a pager? [Yn]");
   ok is_yes($A), 'Buffered scalar filehandle';
 }
 

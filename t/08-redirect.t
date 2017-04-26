@@ -2,7 +2,8 @@ use strict;
 use warnings;
 use File::Temp;
 use Test::More 0.88;
-use t::TestUtils;
+require './t/TestUtils.pm';
+t::TestUtils->import();
 
 #Disable warnings for awkard test file mechanism required by Windows
 my(undef, $tempname) = do{ $^W=0; File::Temp::tempfile(OPEN=>0)};

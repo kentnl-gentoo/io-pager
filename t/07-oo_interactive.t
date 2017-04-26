@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 use Test::More 0.88;
-use t::TestUtils;
+require './t/TestUtils.pm';
+t::TestUtils->import();
 
 # Test OO interface
 
@@ -19,7 +20,7 @@ SKIP: {
     $BOB->close();
   }
 
-  my $A1 = prompt "\nDid you see 'OO factory filehandle' in your pager? [Yn]";
+  my $A1 = prompt("\nDid you see 'OO factory filehandle' in your pager? [Yn]");
   ok is_yes($A1), 'OO, factory instantiation';
 
   require IO::Pager::Unbuffered;
@@ -35,7 +36,7 @@ SKIP: {
     $BOB->close();
   }
 
-  my $A2 = prompt "\nDid you see 'OO subclass filehandle' in your pager? [Yn]";
+  my $A2 = prompt("\nDid you see 'OO subclass filehandle' in your pager? [Yn]");
   ok is_yes($A2), 'OO, subclass instantiation';
 }
 

@@ -5,12 +5,11 @@ use warnings;
 use Config;
 use Test::More;
 use Env qw( HARNESS_ACTIVE );
-use ExtUtils::MakeMaker qw( prompt );
 
-use base qw( Exporter );
-our @EXPORT;
 BEGIN {
-   @EXPORT  = qw{
+  use ExtUtils::MakeMaker qw( prompt );
+  use base qw( Exporter );
+  our @EXPORT  = qw{
       skip_interactive
       skip_old_perl
       skip_no_file_which

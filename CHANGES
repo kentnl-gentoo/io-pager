@@ -1,5 +1,8 @@
 Revision history for Perl extension IO::Pager.
 
+0.37	Tue Apr 25 2017
+	Fix tests for Perl 5.26 removal of . from @INC
+
 0.36	Mon Feb 29 2016
 	Fix Use of uninitialized value at IO/Pager.pm line 98
 

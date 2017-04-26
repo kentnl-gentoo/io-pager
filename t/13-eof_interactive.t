@@ -2,7 +2,8 @@ use strict;
 use warnings;
 use File::Temp;
 use Test::More 0.88;
-use t::TestUtils;
+require './t/TestUtils.pm';
+t::TestUtils->import();
 
 use bignum;
 use IO::Pager::Page;
@@ -19,7 +20,7 @@ SKIP: {
   } until( eof(*STDOUT) );
 
   print "Pager closed, wrapping up.\n";
-  my $A = prompt "\nWere things wrapped up after you quit the pager? [Yn]";
+  my $A = prompt("\nWere things wrapped up after you quit the pager? [Yn]");
   ok is_yes($A), 'Signal handling EOF';
 }
 

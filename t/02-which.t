@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 use Test::More 0.88;
-use t::TestUtils;
+require './t/TestUtils.pm';
+t::TestUtils->import();
 use Env qw( PAGER );
 
 use IO::Pager;
